@@ -12,15 +12,25 @@ brew install --cask vagrant
 # usage
 
 ## create VMs
-```
-export https_proxy=http://approxy.pg.com:80
-export http_proxy=http://approxy.pg.com:80
-cd /Users/joeqiao/Documents/LocalHub/cka/local-k8s
+```sh
+export https_proxy=http://approxy.xx.com:80
+export http_proxy=http://approxy.xx.com:80
+cd /Users/joeqiao/Documents/LocalHub/cka/local-k8s-cks
 vagrant up
 ```
 This step creates 2 vms, configure them to run k8s.
 
 ## init master
+
+login and prepare
+```sh
+vagrant ssh master
+sudo su -
+echo "192.168.50.4" master.k8s.local >> /etc/hosts
+echo "192.168.50.5" node.k8s.local >> /etc/hosts
+```
+install container runtime following https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker
+install kube* following https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
 
 `vagrant up` does this, but after the master is up, you should found below
 line in /tmp/kubeadm.output
@@ -31,7 +41,7 @@ as root:
 
 kubeadm join 10.0.2.15:6443 --token rtsj9q.n6co2ozslz7a4mrt \
     --discovery-token-ca-cert-hash
-    sha256:689b568918dde8dad70f68db0e86be407164cbab3bf77a390f633bf05c27e747
+
 ```
 
 ## init node
