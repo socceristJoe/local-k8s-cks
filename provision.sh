@@ -1,3 +1,9 @@
+export https_proxy=http://approxy.pg.com:80
+export http_proxy=http://approxy.pg.com:80
+
+unset http_proxy
+unset https_proxy
+
 #!/usr/bin/env bash
 
 $ cd /Users/joeqiao/Documents/LocalHub/cka/local-k8s
