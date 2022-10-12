@@ -24,14 +24,26 @@ This step creates 2 vms, configure them to run k8s.
 
 ## init master
 
-login and prepare
+### prepare host
+#### login
 ```sh
 vagrant ssh master
 sudo su -
 echo "192.168.50.4" master.k8s.local >> /etc/hosts
 echo "192.168.50.5" node.k8s.local >> /etc/hosts
 ```
-install container runtime following https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker
+#### install company certificate if any
+http://www.noobyard.com/article/p-bqevkrkr-mx.html
+```sh
+echo -n | openssl s_client -showcerts -connect production.cloudflare.docker.com:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/share/ca-certificates/pg-ca/cloudfront.crt
+cat >>/etc/ca-certificates.conf<<EOF
+pg-ca/cloudfront.crt
+EOF
+update-ca-certificates --fresh
+```
+### install prerequesites
+#### install container runtime following https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker
+##### install docker engine
 ```sh
 apt-get update
 apt-get install \
@@ -50,8 +62,69 @@ service docker start
 docker run hello-world
 
 ```
-install kube* following https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
+##### install cri-dockerd 
+https://github.com/Mirantis/cri-dockerd
+```sh
+cp -r /vagrant/files/cri-dockerd/ .
+mkdir cri-dockerd/bin && cd cri-dockerd/bin
+VERSION=$((git describe --abbrev=0 --tags | sed -e 's/v//') || echo $(cat VERSION)-$(git log -1 --pretty='%h')) PRERELEASE=$(grep -q dev <<< "${VERSION}" && echo "pre" || echo "") REVISION=$(git log -1 --pretty='%h')
+go build -ldflags="-X github.com/Mirantis/cri-dockerd/version.Version='$VERSION}' -X github.com/Mirantis/cri-dockerd/version.PreRelease='$PRERELEASE' -X github.com/Mirantis/cri-dockerd/version.BuildTime='$BUILD_DATE' -X github.com/Mirantis/cri-dockerd/version.GitCommit='$REVISION'" -o cri-dockerd
+# Run these commands as root
+###Install GO###
+wget https://storage.googleapis.com/golang/getgo/installer_linux
+chmod +x ./installer_linux
+./installer_linux
+source ~/.bash_profile
 
+## build
+cp -r /vagrant/files/cri-dockerd/ .
+mkdir cri-dockerd/bin && cd cri-dockerd/bin
+VERSION=$((git describe --abbrev=0 --tags | sed -e 's/v//') || echo $(cat VERSION)-$(git log -1 --pretty='%h')) PRERELEASE=$(grep -q dev <<< "${VERSION}" && echo "pre" || echo "") REVISION=$(git log -1 --pretty='%h')
+go build -ldflags="-X github.com/Mirantis/cri-dockerd/version.Version='$VERSION}' -X github.com/Mirantis/cri-dockerd/version.PreRelease='$PRERELEASE' -X github.com/Mirantis/cri-dockerd/version.BuildTime='$BUILD_DATE' -X github.com/Mirantis/cri-dockerd/version.GitCommit='$REVISION'" -o cri-dockerd
+
+## install
+cd /root/cri-dockerd
+# mkdir bin
+# go build -o bin/cri-dockerd
+mkdir -p /usr/local/bin
+install -o root -g root -m 0755 bin/cri-dockerd /usr/local/bin/cri-dockerd
+cp -a packaging/systemd/* /etc/systemd/system
+sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service
+systemctl daemon-reload
+systemctl enable cri-docker.service
+systemctl enable --now cri-docker.socket
+systemctl status cri-docker.socket
+```
+
+#### install kubeamd kubectl kubelet
+following https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
+```sh
+cd ~
+apt-get update
+apt-get install -y apt-transport-https ca-certificates curl
+curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+
+apt-get update
+apt-get install -y kubelet kubeadm kubectl
+apt-mark hold kubelet kubeadm kubectl
+swapoff -a
+```
+
+### set up cluster
+#### pre-pull images
+```sh
+kubeadm config images list
+kubeadm config images pull --cri-socket=unix:///var/run/cri-dockerd.sock
+```
+
+####
+```sh
+unset http_proxy
+unset https_proxy
+kubeadm init --apiserver-advertise-address=192.168.50.4 --pod-network-cidr=192.168.0.0/16 --image-repository registry.aliyuncs.com/google_containers --cri-socket=unix:///var/run/cri-dockerd.sock | tee /tmp/kubadmin.output
+
+```
 
 `vagrant up` does this, but after the master is up, you should found below
 line in /tmp/kubeadm.output

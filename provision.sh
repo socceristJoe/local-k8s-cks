@@ -1,4 +1,4 @@
-export https_proxy=http://approxy.pg.com:80
+export https_proxy=https://approxy.pg.com:80
 export http_proxy=http://approxy.pg.com:80
 
 unset http_proxy
@@ -67,6 +67,8 @@ cat <<EOF | sudo tee /etc/systemd/system/docker.service.d/http-proxy.conf
 Environment="HTTP_PROXY=http://approxy.pg.com"
 Environment="HTTPS_PROXY=http://approxy.pg.com"
 EOF
+
+echo -n | openssl s_client -showcerts -connect production.cloudflare.docker.com:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/share/ca-certificates/pg-ca/cloudfront.crt
 
 # sudo cp /vagrant/files/proxy.pem /usr/local/share/ca-certificates/
 # sudo openssl x509 -outform der -in /usr/local/share/ca-certificates/proxy.pem -out /usr/local/share/ca-certificates/proxy.crt
