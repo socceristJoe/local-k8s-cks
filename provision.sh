@@ -1,4 +1,4 @@
-export https_proxy=https://approxy.pg.com:80
+export https_proxy=http://approxy.pg.com:80
 export http_proxy=http://approxy.pg.com:80
 
 unset http_proxy
