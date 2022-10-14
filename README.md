@@ -158,6 +158,16 @@ https://www.weave.works/docs/net/latest/kubernetes/kube-addon/#-installation
 kubectl apply -f /vagrant/files/weavenet-2.8.1.yaml
 ```
 
+### install kubectl auto-complete
+https://kubernetes.io/docs/tasks/tools/included/optional-kubectl-configs-bash-linux/
+```sh
+apt-get install bash-completion
+echo 'source <(kubectl completion bash)' >>~/.bashrc
+echo 'alias k=kubectl' >>~/.bashrc
+echo 'complete -o default -F __start_kubectl k' >>~/.bashrc`
+source .bashrc
+```
+
 ## init node
 ### prepare host
 #### login
