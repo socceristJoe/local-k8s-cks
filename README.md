@@ -297,7 +297,7 @@ unset https_proxy
 systemctl daemon-reload 
 systemctl start kubelet 
 systemctl status kubelet
-kubeadm join 192.168.50.4:6443 --token mzv51d.rqk2n70q8bd5x2v6 --discovery-token-ca-cert-hash sha256:d2fa5aa25ca1909c5adf6838413ebd3e5fe848f9478ed00a5afdf0331a025d52
+kubeadm join 192.168.50.4:6443 --token {{token}} --discovery-token-ca-cert-hash sha256:{{hash}}
 ```
 reset if init fails
 ```sh
@@ -306,24 +306,4 @@ systemctl daemon-reload
 systemctl restart kubelet 
 systemctl status kubelet
 kubeadm reset -f
-```
-
-`vagrant up` does this, but after the master is up, you should found below
-line in /tmp/kubeadm.output
-
-```
-Then you can join any number of worker nodes by running the following on each
-as root:
-
-kubeadm join 10.0.2.15:6443 --token rtsj9q.n6co2ozslz7a4mrt \
-    --discovery-token-ca-cert-hash
-
-```
-
-## init node
-quit master vm
-```
-vagrant ssh node
-sudo su - 
-THEN_RUN_THE_JOIN_COMMAND
 ```
